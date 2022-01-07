@@ -19,16 +19,25 @@ typedef struct int_item int_item_t;
 typedef struct str_item str_item_t;
 
 int insert_record() {
-    open_file("db");
-    page_t *p = get_page("db", 0);
-    read_page("db", p);
-    p->data = "Hello";
-    write_page("db", p);
+    const char *filename = "db";
+    open_file(filename);
 
-    if (p->data != NULL) {
-        printf("%s\n", p->data);
-    }
+    page_t p = get_page(filename, 0);
+    page_set_current_pos(filename, 12, p);
+    page_put_int(filename, 12, p);
+    int val = page_get_int(filename, p);
 
+
+    page_t p_2 = get_page(filename, 2);
+    page_set_current_pos(filename, 12, p_2);
+    page_put_int(filename, 123, p_2);
+    int val_2 = page_get_int(filename, p_2);
+
+
+    page_set_current_pos(filename, 12, p);
+    val = page_get_int(filename, p);
+
+    printf("page 1 val: %d, page 2 val: %d\n", val, val_2);
 }
 
 int main() {
