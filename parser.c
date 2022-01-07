@@ -31,4 +31,10 @@ void parse(char *query) {
     }
 
     get_sub_strings(query, tokens);
+/*
+    for (i = 0; i < MAX_TOKENS; i++) {
+        if (tokens[i] != 0);
+            printf("%s\n", tokens[i]);
+    }
+*/
 }

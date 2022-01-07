@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I -g
-DEPS = parser.h
-OBJ = parser.c bored.c
+DEPS = parser.h pager.h
+OBJ = parser.c bored.c pager.c
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
