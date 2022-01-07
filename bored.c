@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "parser.h"
+#include "pager.h"
 
 struct int_item {
     char *name;
@@ -17,24 +18,23 @@ struct str_item {
 typedef struct int_item int_item_t;
 typedef struct str_item str_item_t;
 
+int insert_record() {
+    open_file("db");
+    page_t *p = get_page("db", 0);
+    read_page("db", p);
+    p->data = "Hello";
+    write_page("db", p);
 
-int_item_t create_item_nm(char *name, int value) {
-    int_item_t item;
-    item.name = name;
-    item.value = value;
+    if (p->data != NULL) {
+        printf("%s\n", p->data);
+    }
 
-    return item;
-}
-
-int_item_t *create_item_m(char *name, int value) {
-    int_item_t *item = (int_item_t *)malloc(sizeof(int_item_t));
-    item->name = name;
-    item->value = value;
-
-    return item;
 }
 
 int main() {
     char *query = "select employee from employees";
     parse(query);
+    open_file("db");
+
+    insert_record();
 }
