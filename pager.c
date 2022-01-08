@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define BLOCK_SIZE 512
 
@@ -24,15 +25,20 @@ int open_file(const char *filename) {
     }
 
     return fd;
-}   
+}  
+
+int close_file(int fd) {
+    close(fd);
+}
 
 page_t get_page(const char *filename, int blk_num) {
     page_t p = malloc(sizeof(page_t));
     int fd = open_file(filename);
-    p->data = NULL;
+    p->data = malloc(BLOCK_SIZE);
+    memset(p->data, 0, BLOCK_SIZE);
     p->page_nr = blk_num;
     p->current_pos = BLOCK_SIZE * blk_num;
-
+    
     return p;
 }
 
@@ -60,11 +66,11 @@ int write_page(const char *filename, page_t page) {
     }
 
     if (lseek(fd, BLOCK_SIZE * page->page_nr, SEEK_SET) < 0) {
-        printf("write_page() error. Page does not exist.\n");
+        printf("write_page() error. Page pos does not exist.\n");
     }
 
-    if (write(fd, page->data, BLOCK_SIZE == -1) == -1) {
-        printf("write_page() error. Failed to write data to page.");
+    if (write(fd, page->data, BLOCK_SIZE) == -1) {
+        printf("write_page() error. Failed to write data to page.\n");
     }
 }
 
@@ -83,8 +89,7 @@ int page_set_current_pos(const char *filename, int pos, page_t page) {
 int page_put_int(const char *filename, int val, page_t page) {
     int fd = open_file(filename);
     if (page->current_pos < (page->page_nr * BLOCK_SIZE + BLOCK_SIZE) - sizeof(int)) {
-        lseek(fd, page->current_pos, SEEK_SET);
-        write(fd, (char *)&val, sizeof(int));
+        memcpy(page->data + page->current_pos, (char *)&val, sizeof(int));
     }
     else {
         printf("Page %d is full\n", page->page_nr);
@@ -97,9 +102,7 @@ int page_put_int(const char *filename, int val, page_t page) {
 int page_get_int(const char *filename, page_t page) {
     int fd, buf, offset;
     fd = open_file(filename);
-    offset = (page->page_nr * BLOCK_SIZE) + page->current_pos;
-    lseek(fd, page->current_pos, SEEK_SET);
-    read(fd, (int *)&buf, sizeof(int));
+    int res = (int) *((int *)((page->data) + page->current_pos));
     
-    return buf;
+    return res;
 }
