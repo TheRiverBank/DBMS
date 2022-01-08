@@ -59,6 +59,7 @@ int read_page(const char *filename, page_t page) {
 }
 
 int write_page(const char *filename, page_t page) {
+    /* Writes page to disk */
     int fd = open_file(filename);
 
     if (fd == -1) {
