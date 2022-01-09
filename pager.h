@@ -11,6 +11,6 @@ int read_page(const char *filename, page_t page);
 int write_page(const char *filename, page_t page);
 
 
-int page_set_current_pos(const char *filename, int pos, page_t page);
-int page_put_int(const char *filename, int val, page_t page);
-int page_get_int(const char *filename, page_t page);
+int page_set_current_pos(int pos, page_t page);
+int page_put_int(int val, page_t page);
+int page_get_int(page_t page);

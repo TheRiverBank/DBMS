@@ -13,6 +13,8 @@ struct page {
 };
 typedef struct page *page_t;
 
+char *filename = "db";
+
 int open_file(const char *filename) {
     /* Opens file and retuns file handle.
      * If the file is not found, it is created.
@@ -75,21 +77,13 @@ int write_page(const char *filename, page_t page) {
     }
 }
 
-int page_set_current_pos(const char *filename, int pos, page_t page) {
-    int offset = (page->page_nr * BLOCK_SIZE) + pos;
-    if ((page->page_nr * BLOCK_SIZE) + pos < (page->page_nr * BLOCK_SIZE) + BLOCK_SIZE) {
-        int fd = open_file(filename);
-        lseek(fd, offset, SEEK_SET);
-        page->current_pos = offset;
-    }
-    else {
-        printf("Attempt to set position out of page bounds.\n");
-    }
+int page_set_current_pos(int pos, page_t page) {
+    page->current_pos = pos;
 }
 
-int page_put_int(const char *filename, int val, page_t page) {
+int page_put_int(int val, page_t page) {
     int fd = open_file(filename);
-    if (page->current_pos < (page->page_nr * BLOCK_SIZE + BLOCK_SIZE) - sizeof(int)) {
+    if (page->current_pos + sizeof(int) < BLOCK_SIZE) {
         memcpy(page->data + page->current_pos, (char *)&val, sizeof(int));
     }
     else {
@@ -100,9 +94,7 @@ int page_put_int(const char *filename, int val, page_t page) {
     return 1;
 }   
 
-int page_get_int(const char *filename, page_t page) {
-    int fd, buf, offset;
-    fd = open_file(filename);
+int page_get_int(page_t page) {
     int res = (int) *((int *)((page->data) + page->current_pos));
     
     return res;
