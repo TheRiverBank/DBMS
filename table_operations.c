@@ -20,7 +20,7 @@ struct table {
     page_t current_page;
     int n_fields;
 };
-typedef struct table table_t;
+typedef struct table *table_t; 
 
 struct record {
     char *field_name;
@@ -30,7 +30,7 @@ typedef struct record record_t;
 
 
 table_t create_table(char *tbl_name, char *field_names[], int field_types[], int field_sizes[], int n_fields) {
-    table_t *tbl = malloc(sizeof(table_t));
+    table_t tbl = malloc(sizeof(table_t));
     field_t *fld_head, *tmp_fld;
     tbl->tbl_name = tbl_name;
     
@@ -52,18 +52,36 @@ table_t create_table(char *tbl_name, char *field_names[], int field_types[], int
     }
     
     tbl->first_field = fld_head;
+    tbl->n_fields = n_fields;
 }
 
-int insert_record(char *values[], table_t *tbl) {
+int insert_record(int values[], table_t tbl) {
     int i;
     field_t *fld = tbl->first_field;
     page_t pg = tbl->current_page;
     for (i = 0; i < tbl->n_fields; i++) {
         if (fld->type == INT_TYPE) {
             // IF page has space
-            page_put_int((int) *((int *)&values[i]), pg);
+            printf("%d %d\n", values[i], tbl->n_fields);
+            page_put_int(values[i], pg);
 
             // ELSE get page with space
         }
+    }
+}
+
+void print_records_in_page(table_t tbl, page_t page) {
+    int i, j, n_records;
+
+    n_records = 2;
+    page->current_pos = 0;
+    for (i = 0; i < n_records; i ++) {
+        field_t *field_desc = tbl->first_field;
+        for (j = 0; j < tbl->n_fields; j++) {
+            int val = page_get_int(page);
+            printf("%s: %d\t", field_desc->name, val);
+            field_desc = field_desc->next_field;
+        }
+        printf("\n");
     }
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define BLOCK_SIZE 512
+#define INT_SIZE 4
 
 struct page {
     char *data;
@@ -33,19 +34,15 @@ int close_file(int fd) {
     close(fd);
 }
 
-page_t get_page(const char *filename, int blk_num) {
-    page_t p = malloc(sizeof(page_t));
-    int fd = open_file(filename);
-    p->data = malloc(BLOCK_SIZE);
-    memset(p->data, 0, BLOCK_SIZE);
-    p->page_nr = blk_num;
-    p->current_pos = BLOCK_SIZE * blk_num;
-    
-    return p;
-}
 
-int read_page(const char *filename, page_t page) {
+page_t get_page(const char *filename, int blk_num) {
+    /* Reads blk_num from disk and creates a page with the block data */
     int fd = open_file(filename);
+    page_t page = malloc(sizeof(page_t));
+
+    page->data = malloc(BLOCK_SIZE);
+    page->page_nr = blk_num;
+    page->current_pos = BLOCK_SIZE * blk_num;
 
     if (fd == -1) {
         printf("read_page() error. Faile to get file.");
@@ -58,6 +55,8 @@ int read_page(const char *filename, page_t page) {
     if (read(fd, page->data, BLOCK_SIZE) < 0) {
         printf("read_page() error. Failed to read page.\n");
     }   
+
+    return page;
 }
 
 int write_page(const char *filename, page_t page) {
@@ -91,11 +90,12 @@ int page_put_int(int val, page_t page) {
         return 0;
     }
 
+    page->current_pos += INT_SIZE;
     return 1;
 }   
 
 int page_get_int(page_t page) {
     int res = (int) *((int *)((page->data) + page->current_pos));
-    
+    page->current_pos += INT_SIZE;
     return res;
 }
