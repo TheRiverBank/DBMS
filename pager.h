@@ -2,8 +2,17 @@ struct page {
     char *data;
     int page_nr;
     int current_pos;
+    int used;
 };
 typedef struct page *page_t;
+
+
+
+#define BLOCK_SIZE 512
+#define INT_SIZE 4
+
+enum {CLEAN, USED};
+enum {FALSE, TRUE};
 
 int open_file(const char *filename);
 int close_file(int fd);
@@ -14,3 +23,4 @@ int write_page(const char *filename, page_t page);
 int page_set_current_pos(int pos, page_t page);
 int page_put_int(int val, page_t page);
 int page_get_int(page_t page);
+int page_set_pos_beg(page_t page);

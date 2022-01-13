@@ -24,3 +24,4 @@ typedef struct record record_t;
 table_t create_table(char *tbl_name, char *field_names[], int field_types[], int field_sizes[], int n_fields);
 int insert_record(int values[], table_t tbl);
 void print_records_in_page(table_t tbl, page_t page);
+void print_db(table_t tbl);

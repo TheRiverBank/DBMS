@@ -3,16 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define BLOCK_SIZE 512
-#define INT_SIZE 4
-
-struct page {
-    char *data;
-    int page_nr;
-    int current_pos;
-};
-typedef struct page *page_t;
+#include "pager.h"
 
 char *filename = "db";
 
@@ -43,6 +34,7 @@ page_t get_page(const char *filename, int blk_num) {
     page->data = malloc(BLOCK_SIZE);
     page->page_nr = blk_num;
     page->current_pos = BLOCK_SIZE * blk_num;
+    page->used = USED;
 
     if (fd == -1) {
         printf("read_page() error. Faile to get file.");
@@ -98,4 +90,8 @@ int page_get_int(page_t page) {
     int res = (int) *((int *)((page->data) + page->current_pos));
     page->current_pos += INT_SIZE;
     return res;
+}
+
+int page_set_pos_beg(page_t page) {
+    page->current_pos = 0;
 }
