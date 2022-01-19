@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "pager.h"
 #include "parser.h"
 
@@ -30,6 +32,9 @@ typedef struct record record_t;
 
 
 table_t create_table(char *tbl_name, char *field_names[], int field_types[], int field_sizes[], int n_fields) {
+    /* Creates a table by creating a set of field descriptors for 
+     * the given fields. 
+     */
     table_t tbl = malloc(sizeof(table_t));
     field_t *fld_head, *tmp_fld;
     tbl->tbl_name = tbl_name;
@@ -56,24 +61,23 @@ table_t create_table(char *tbl_name, char *field_names[], int field_types[], int
 }
 
 int insert_record(int values[], table_t tbl) {
+    /* Inserts the given values into the table */
     char *filename = "db";
     int i;
     field_t *fld = tbl->first_field;
     page_t pg = tbl->current_page;
     for (i = 0; i < tbl->n_fields; i++) {
         if (fld->type == INT_TYPE) {
-            // IF page has space
+            int stat = page_put_int(values[i], pg);
 
-            page_put_int(values[i], pg);
-
-            printf("%d\n", pg->current_pos);
-            if (pg->current_pos + sizeof(int) >= BLOCK_SIZE){
+            // If page is full, get next page
+            if (stat == 0){
                 write_page(filename, pg);
-                pg = get_page(filename, pg->page_nr++);
+                int pg_n = pg->page_nr;
+                pg_n++;
+                pg = get_page(filename, pg_n);
                 tbl->current_page = pg;
             }
-
-            // ELSE get page with space
         }
     }
 }
@@ -81,7 +85,7 @@ int insert_record(int values[], table_t tbl) {
 void print_records_in_page(table_t tbl, page_t page) {
     int i, j, n_records;
 
-    n_records = 70;
+    n_records = 64;
     page->current_pos = 0;
     for (i = 0; i < n_records; i++) {
         field_t *field_desc = tbl->first_field;
@@ -95,18 +99,27 @@ void print_records_in_page(table_t tbl, page_t page) {
 }
 
 void print_db(table_t tbl) {
+    int fd, file_size, n_blocks;
+    fd = open_file(tbl->tbl_name);
+    struct stat buf;
+    fstat(fd, &buf);
+    off_t size = buf.st_size;
+    printf("size: %ld\n", size);
+
     page_t page = get_page("db", 0);
     page_set_pos_beg(page);
     tbl->current_page = page;
 
     int i = 0, done = FALSE;
 
-    while (i < 2) {
+    while (i < 4) {
         if (page->used == CLEAN)
             done = TRUE;
 
         print_records_in_page(tbl, page);
-        page = get_page("db", page->page_nr++);
+        int pg_n = page->page_nr;
+        pg_n++;
+        page = get_page("db", pg_n);
         page_set_pos_beg(page);
         tbl->current_page = page;
         i++;

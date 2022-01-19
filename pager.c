@@ -33,7 +33,7 @@ page_t get_page(const char *filename, int blk_num) {
 
     page->data = malloc(BLOCK_SIZE);
     page->page_nr = blk_num;
-    page->current_pos = BLOCK_SIZE * blk_num;
+    page->current_pos = 0;
     page->used = USED;
 
     if (fd == -1) {
@@ -69,6 +69,7 @@ int write_page(const char *filename, page_t page) {
 }
 
 int page_set_current_pos(int pos, page_t page) {
+    /* Sets the current position in the page */
     page->current_pos = pos;
 }
 
@@ -87,11 +88,15 @@ int page_put_int(int val, page_t page) {
 }   
 
 int page_get_int(page_t page) {
+    /* Retrieves an integer at the current position. 
+     * The current position is set forward by 4 bytes. 
+     */
     int res = (int) *((int *)((page->data) + page->current_pos));
     page->current_pos += INT_SIZE;
     return res;
 }
 
 int page_set_pos_beg(page_t page) {
+    /* Sets the current position in the page back to 0 */
     page->current_pos = 0;
 }

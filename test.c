@@ -21,7 +21,7 @@ int test_write() {
     
     printf("Table created\nInserting record\n");
     int i;
-    int n_records = 70;
+    int n_records = 200;
     for (i = 0; i < n_records; i++) {
         int vals[2] = {i, 432};
         insert_record(vals, tbl);
@@ -30,7 +30,7 @@ int test_write() {
     //print_records_in_page(tbl, tbl->current_page);
 
     //print_records_in_page(tbl, tbl->current_page);
-    //write_page(filename, tbl->current_page);
+    write_page(filename, tbl->current_page);
     print_db(tbl);
     //print_records_in_page(tbl, tbl->current_page);
 
