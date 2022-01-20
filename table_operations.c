@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "pager.h"
@@ -21,6 +22,7 @@ struct table {
     field_t *first_field;
     page_t current_page;
     int n_fields;
+    int rec_len;
 };
 typedef struct table *table_t; 
 
@@ -51,11 +53,14 @@ table_t create_table(char *tbl_name, char *field_names[], int field_types[], int
         f->name = field_names[i];
         f->offset = field_sizes[i];
         f->type = field_types[i];
-
+        
         tmp_fld->next_field = f;
         tmp_fld = tmp_fld->next_field;
     }
-    
+
+    for (i = 0; i < n_fields; i++) {
+        tbl->rec_len += field_sizes[i];
+    }
     tbl->first_field = fld_head;
     tbl->n_fields = n_fields;
 }
@@ -82,10 +87,67 @@ int insert_record(int values[], table_t tbl) {
     }
 }
 
-void print_records_in_page(table_t tbl, page_t page) {
-    int i, j, n_records;
+int get_num_blocks(char *f_name) {
+     int n_blocks;
+    // Get number of bytes in file
+    struct stat buf;
+    stat(f_name, &buf);
+    off_t size = buf.st_size;
+    // Get number of written blocks
+    n_blocks = size / BLOCK_SIZE;
 
-    n_records = 64;
+    return n_blocks;
+}
+
+int offst_to_field(table_t tbl, char *fld_name) {
+    int i, offset = 0;
+    field_t *fld = tbl->first_field;
+
+    for (i = 0; i < tbl->n_fields; i++) {
+        if (strcmp(fld->name, fld_name) == 0) {
+            return offset;
+        }
+
+        offset += fld->offset;
+        fld = fld->next_field;
+    }
+
+    return -1;
+}
+
+int search_table(table_t tbl, char *fld_name, int value) {
+    int i, j, n_blocks, n_records, cur_page_num;
+    page_t pg;
+
+    n_blocks = get_num_blocks(tbl->tbl_name);
+    n_records = BLOCK_SIZE / tbl->rec_len;
+    // Need to add a offset to the fld_name searched for in the record
+    cur_page_num = 0;
+    pg = get_page(tbl->tbl_name, cur_page_num);
+    page_set_pos_beg(pg);
+    tbl->current_page = pg;
+
+    int val, offset;
+    offset = offst_to_field(tbl, fld_name);
+    i = 0;
+    while (i < n_blocks) {
+        for (j = 0; j < n_records; j++) {
+            val = page_get_int_at(pg, offset + pg->current_pos);
+            if (val == value) {
+                return 1;
+            }
+            pg->current_pos += tbl->rec_len;
+        }
+        i++;
+        pg = get_page(tbl->tbl_name, i);
+    }
+
+    return 0;
+}
+
+void print_records_in_page(table_t tbl, page_t page, int n_records) {
+    int i, j;
+
     page->current_pos = 0;
     for (i = 0; i < n_records; i++) {
         field_t *field_desc = tbl->first_field;
@@ -99,22 +161,22 @@ void print_records_in_page(table_t tbl, page_t page) {
 }
 
 void print_db(table_t tbl) {
-    int i, fd, n_blocks;
+    int i, fd, n_blocks, n_records;
 
     // Get number of bytes in file
     struct stat buf;
     stat(tbl->tbl_name, &buf);
     off_t size = buf.st_size;
     // Get number of written blocks
-    n_blocks = size / BLOCK_SIZE;
+    n_blocks = get_num_blocks(tbl->tbl_name);
 
     page_t page = get_page(tbl->tbl_name, 0);
     page_set_pos_beg(page);
     tbl->current_page = page;
-
+    n_records = BLOCK_SIZE / tbl->rec_len;
     i = 0;
     while (i < n_blocks) {
-        print_records_in_page(tbl, page);
+        print_records_in_page(tbl, page, n_records);
         int pg_n = page->page_nr;
         pg_n++;
         page = get_page("db", pg_n);
@@ -123,3 +185,4 @@ void print_db(table_t tbl) {
         i++;
     }
 }
+

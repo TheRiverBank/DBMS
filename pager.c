@@ -96,6 +96,20 @@ int page_get_int(page_t page) {
     return res;
 }
 
+int page_get_int_at(page_t page, int pos) {
+      /* Retrieves an integer at the specified position. 
+     * The current position is not incremented. 
+     */
+    if (pos > BLOCK_SIZE) {
+        printf("FAILURE, searching beyond page size\n");
+        return -1;
+    }
+
+    int res = (int) *((int *)((page->data) + pos));
+
+    return res;
+}
+
 int page_set_pos_beg(page_t page) {
     /* Sets the current position in the page back to 0 */
     page->current_pos = 0;

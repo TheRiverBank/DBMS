@@ -25,8 +25,11 @@ int test_write() {
         insert_record(vals, tbl);
     } 
     printf("Record inserted\nPrinting record\n");
-
     write_page(filename, tbl->current_page);
     print_db(tbl);
 
+    int found = search_table(tbl, "ID", 100);
+    if (found == 1) {
+        printf("FOUND\n");
+    }
 }
