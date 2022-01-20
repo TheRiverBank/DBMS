@@ -69,9 +69,9 @@ int insert_record(int values[], table_t tbl) {
     for (i = 0; i < tbl->n_fields; i++) {
         if (fld->type == INT_TYPE) {
             int stat = page_put_int(values[i], pg);
-
             // If page is full, get next page
             if (stat == 0){
+                // Write the page befre swapping it out
                 write_page(filename, pg);
                 int pg_n = pg->page_nr;
                 pg_n++;
@@ -99,23 +99,21 @@ void print_records_in_page(table_t tbl, page_t page) {
 }
 
 void print_db(table_t tbl) {
-    int fd, file_size, n_blocks;
-    fd = open_file(tbl->tbl_name);
-    struct stat buf;
-    fstat(fd, &buf);
-    off_t size = buf.st_size;
-    printf("size: %ld\n", size);
+    int i, fd, n_blocks;
 
-    page_t page = get_page("db", 0);
+    // Get number of bytes in file
+    struct stat buf;
+    stat(tbl->tbl_name, &buf);
+    off_t size = buf.st_size;
+    // Get number of written blocks
+    n_blocks = size / BLOCK_SIZE;
+
+    page_t page = get_page(tbl->tbl_name, 0);
     page_set_pos_beg(page);
     tbl->current_page = page;
 
-    int i = 0, done = FALSE;
-
-    while (i < 4) {
-        if (page->used == CLEAN)
-            done = TRUE;
-
+    i = 0;
+    while (i < n_blocks) {
         print_records_in_page(tbl, page);
         int pg_n = page->page_nr;
         pg_n++;
