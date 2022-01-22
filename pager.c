@@ -33,8 +33,9 @@ page_t get_page(const char *filename, int blk_num) {
 
     page->data = malloc(BLOCK_SIZE);
     page->page_nr = blk_num;
-    page->current_pos = 0;
-    page->used = USED;
+    page->current_pos = HEADER_SIZE;
+    lseek(fd, PG_LAST_WRITTEN_BYTE, SEEK_SET);
+    read(fd, page->last_used_byte, INT_SIZE);
 
     if (fd == -1) {
         printf("read_page() error. Faile to get file.");
@@ -44,7 +45,7 @@ page_t get_page(const char *filename, int blk_num) {
         printf("read_page() error. Page does not exist.\n");
     }
 
-    if (read(fd, page->data, BLOCK_SIZE) < 0) {
+    if (read(fd, (int *)page->data, BLOCK_SIZE) < 0) {
         printf("read_page() error. Failed to read page.\n");
     }   
 
@@ -54,6 +55,10 @@ page_t get_page(const char *filename, int blk_num) {
 int write_page(const char *filename, page_t page) {
     /* Writes page to disk */
     int fd = open_file(filename);
+
+    // Write header stuff
+    lseek(fd, PG_LAST_WRITTEN_BYTE, SEEK_SET);
+    write(fd, (char *)&page->last_used_byte, INT_SIZE);
 
     if (fd == -1) {
         printf("write_page() error. Failed to get file.");
@@ -74,7 +79,6 @@ int page_set_current_pos(int pos, page_t page) {
 }
 
 int page_put_int(int val, page_t page) {
-    int fd = open_file(filename);
     if (page->current_pos + sizeof(int) < BLOCK_SIZE) {
         memcpy(page->data + page->current_pos, (char *)&val, sizeof(int));
     }
@@ -82,8 +86,9 @@ int page_put_int(int val, page_t page) {
         printf("Page %d is full\n", page->page_nr);
         return 0;
     }
-
+    page->last_used_byte += INT_SIZE;
     page->current_pos += INT_SIZE;
+    
     return 1;
 }   
 
@@ -101,7 +106,7 @@ int page_get_int_at(page_t page, int pos) {
      * The current position is not incremented. 
      */
     if (pos > BLOCK_SIZE) {
-        printf("FAILURE, searching beyond page size\n");
+        printf("FAILURE, get beyond page size\n");
         return -1;
     }
 
@@ -112,5 +117,5 @@ int page_get_int_at(page_t page, int pos) {
 
 int page_set_pos_beg(page_t page) {
     /* Sets the current position in the page back to 0 */
-    page->current_pos = 0;
+    page->current_pos = HEADER_SIZE;
 }

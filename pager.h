@@ -2,7 +2,7 @@ struct page {
     char *data;
     int page_nr;
     int current_pos;
-    int used;
+    int last_used_byte;
 };
 typedef struct page *page_t;
 
@@ -10,6 +10,9 @@ typedef struct page *page_t;
 
 #define BLOCK_SIZE 512
 #define INT_SIZE 4
+#define HEADER_SIZE 24
+
+#define PG_LAST_WRITTEN_BYTE 1
 
 enum {CLEAN, USED};
 enum {FALSE, TRUE};

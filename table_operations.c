@@ -116,11 +116,13 @@ int offst_to_field(table_t tbl, char *fld_name) {
 }
 
 int search_table(table_t tbl, char *fld_name, int value) {
+    /* Linear search of table (only int)*/
     int i, j, n_blocks, n_records, cur_page_num;
     page_t pg;
 
     n_blocks = get_num_blocks(tbl->tbl_name);
     n_records = BLOCK_SIZE / tbl->rec_len;
+
     // Need to add a offset to the fld_name searched for in the record
     cur_page_num = 0;
     pg = get_page(tbl->tbl_name, cur_page_num);
@@ -150,9 +152,14 @@ void print_records_in_page(table_t tbl, page_t page, int n_records) {
 
     page->current_pos = 0;
     for (i = 0; i < n_records; i++) {
+       
+        if (page->current_pos > page->last_used_byte) {
+               break;
+        }
         field_t *field_desc = tbl->first_field;
         for (j = 0; j < tbl->n_fields; j++) {
             int val = page_get_int(page);
+        
             printf("%s: %d\t", field_desc->name, val);
             field_desc = field_desc->next_field;
         }
