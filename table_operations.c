@@ -133,7 +133,7 @@ int search_table(table_t tbl, char *fld_name, int value) {
     offset = offst_to_field(tbl, fld_name);
     i = 0;
     while (i < n_blocks) {
-        for (j = 0; j < n_records; j++) {
+        while(pg->current_pos <= pg->last_used_byte) {
             val = page_get_int_at(pg, offset + pg->current_pos);
             if (val == value) {
                 return 1;
@@ -147,15 +147,10 @@ int search_table(table_t tbl, char *fld_name, int value) {
     return 0;
 }
 
-void print_records_in_page(table_t tbl, page_t page, int n_records) {
+void print_records_in_page(table_t tbl, page_t page) {
     int i, j;
-
-    page->current_pos = 0;
-    for (i = 0; i < n_records; i++) {
-       
-        if (page->current_pos > page->last_used_byte) {
-               break;
-        }
+    
+    while(page->current_pos <= page->last_used_byte) {
         field_t *field_desc = tbl->first_field;
         for (j = 0; j < tbl->n_fields; j++) {
             int val = page_get_int(page);
@@ -180,10 +175,10 @@ void print_db(table_t tbl) {
     page_t page = get_page(tbl->tbl_name, 0);
     page_set_pos_beg(page);
     tbl->current_page = page;
-    n_records = BLOCK_SIZE / tbl->rec_len;
+ 
     i = 0;
     while (i < n_blocks) {
-        print_records_in_page(tbl, page, n_records);
+        print_records_in_page(tbl, page);
         int pg_n = page->page_nr;
         pg_n++;
         page = get_page("db", pg_n);

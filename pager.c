@@ -34,8 +34,9 @@ page_t get_page(const char *filename, int blk_num) {
     page->data = malloc(BLOCK_SIZE);
     page->page_nr = blk_num;
     page->current_pos = HEADER_SIZE;
-    lseek(fd, PG_LAST_WRITTEN_BYTE, SEEK_SET);
-    read(fd, page->last_used_byte, INT_SIZE);
+    // Read in last byte written to the page from header
+    lseek(fd, PG_LAST_WRITTEN_BYTE + (page->page_nr * BLOCK_SIZE), SEEK_SET);
+    read(fd, (int *)&page->last_used_byte, INT_SIZE);
 
     if (fd == -1) {
         printf("read_page() error. Faile to get file.");
@@ -56,10 +57,6 @@ int write_page(const char *filename, page_t page) {
     /* Writes page to disk */
     int fd = open_file(filename);
 
-    // Write header stuff
-    lseek(fd, PG_LAST_WRITTEN_BYTE, SEEK_SET);
-    write(fd, (char *)&page->last_used_byte, INT_SIZE);
-
     if (fd == -1) {
         printf("write_page() error. Failed to get file.");
     }
@@ -71,11 +68,20 @@ int write_page(const char *filename, page_t page) {
     if (write(fd, page->data, BLOCK_SIZE) == -1) {
         printf("write_page() error. Failed to write data to page.\n");
     }
+
+     // Write header stuff to disk
+    lseek(fd, PG_LAST_WRITTEN_BYTE + (page->page_nr * BLOCK_SIZE), SEEK_SET);
+    write(fd, (char *)&page->last_used_byte, INT_SIZE);
 }
 
 int page_set_current_pos(int pos, page_t page) {
     /* Sets the current position in the page */
+    if (pos < HEADER_SIZE) {
+        printf("invalid pos placement\n");
+        return -1;
+    }
     page->current_pos = pos;
+    return 1;
 }
 
 int page_put_int(int val, page_t page) {
@@ -86,7 +92,8 @@ int page_put_int(int val, page_t page) {
         printf("Page %d is full\n", page->page_nr);
         return 0;
     }
-    page->last_used_byte += INT_SIZE;
+    
+    page->last_used_byte = page->current_pos;
     page->current_pos += INT_SIZE;
     
     return 1;
