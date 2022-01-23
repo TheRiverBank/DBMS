@@ -34,9 +34,6 @@ page_t get_page(const char *filename, int blk_num) {
     page->data = malloc(BLOCK_SIZE);
     page->page_nr = blk_num;
     page->current_pos = HEADER_SIZE;
-    // Read in last byte written to the page from header
-    lseek(fd, PG_LAST_WRITTEN_BYTE + (page->page_nr * BLOCK_SIZE), SEEK_SET);
-    read(fd, (int *)&page->last_used_byte, INT_SIZE);
 
     if (fd == -1) {
         printf("read_page() error. Faile to get file.");
@@ -49,6 +46,10 @@ page_t get_page(const char *filename, int blk_num) {
     if (read(fd, (int *)page->data, BLOCK_SIZE) < 0) {
         printf("read_page() error. Failed to read page.\n");
     }   
+
+    // Read in last byte written to the page from header
+    lseek(fd, PG_LAST_WRITTEN_BYTE + (page->page_nr * BLOCK_SIZE), SEEK_SET);
+    read(fd, (int *)&page->last_used_byte, INT_SIZE);
 
     return page;
 }

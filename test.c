@@ -11,7 +11,7 @@ int test_write() {
     page_t p = get_page(filename, 0);
     page_set_pos_beg(p);
  
-    char *field_names[2] = {"ID", "Age"};
+    char *field_names[3] = {"ID", "Age"};
     int field_types[2] = {0, 0};
     int field_sizes[2] = {4, 4};
     table_t tbl = create_table(filename, field_names, field_types, field_sizes, 2);
@@ -28,7 +28,7 @@ int test_write() {
     write_page(filename, tbl->current_page);
     print_db(tbl);
 
-    int found = search_table(tbl, "ID", 100);
+    int found = search_table_linear(tbl, "ID", 100);
     if (found == 1) {
         printf("FOUND\n");
     }

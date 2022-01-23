@@ -115,13 +115,82 @@ int offst_to_field(table_t tbl, char *fld_name) {
     return -1;
 }
 
-int search_table(table_t tbl, char *fld_name, int value) {
-    /* Linear search of table (only int)*/
+int get_mid_page(int left, int right) {
+  /* Convert to indecies */
+  return left + (right - left) / 2;
+}
+
+int get_mid_record(int left, int right, int record_len) {
+    int left_new = (left - HEADER_SIZE) / record_len;
+    int right_new = (right - HEADER_SIZE) / record_len;
+
+    return ((left_new + ((right_new - left_new) / 2)) * record_len) + HEADER_SIZE;
+}
+
+int search_table_binary(table_t tbl, char *fld_name, int value) {
+     /* Binary search of table (only int)*/
     int i, j, n_blocks, n_records, cur_page_num;
+    page_t cur_page;
+    int left_page_idx, right_page_idx, cur_page_idx;
+    int left_val, right_val, mid_val;
+    int left_val_pos, right_val_pos;
+    int offset = 0;
+
+    n_blocks = get_num_blocks(tbl->tbl_name);
+    
+    left_page_idx = 0;
+    right_page_idx = n_blocks;
+
+    cur_page_idx = get_mid_page(left_page_idx, right_page_idx);
+    cur_page = get_page(tbl->tbl_name, cur_page_idx);
+    tbl->current_page = cur_page;
+
+    while (left_page_idx <= right_page_idx) {
+        left_val_pos = cur_page->current_pos;
+        right_val_pos = cur_page->last_used_byte - tbl->rec_len;
+        // Check min and max value in current page
+        left_val = page_get_int_at(cur_page, left_val_pos + offset);
+        right_val = page_get_int_at(cur_page, right_val_pos + offset);
+        // Check if desired value is in this page
+        if (value >= left_val && value <= right_val) {
+            mid_val = get_mid_record(left_val_pos, right_val_pos, tbl->rec_len);
+            while(left_val_pos <= right_val_pos) {
+                if (value == mid_val) {
+                    // Found the value, have to find first occurance
+                    int start_pos, start_page;
+
+                    page_set_current_pos(mid_val, cur_page);
+
+
+                }
+            }
+        }
+
+        // If val was not in current page, find next direction
+        if (right_val < value) {
+            left_page_idx = cur_page->page_nr + 1;
+        } else {
+            right_page_idx = cur_page->page_nr - 1;
+        }
+
+        page_set_pos_beg(cur_page);
+        write_page(tbl->tbl_name, cur_page);
+
+        cur_page_idx = get_mid_page(left_page_idx, right_page_idx);
+        cur_page = get_page(tbl->tbl_name, cur_page_idx);
+        page_set_pos_beg(cur_page);
+        tbl->current_page = cur_page;
+    }   
+    
+    return 0;
+}
+
+int search_table_linear(table_t tbl, char *fld_name, int value) {
+    /* Linear search of table (only int)*/
+    int i, j, n_blocks, cur_page_num;
     page_t pg;
 
     n_blocks = get_num_blocks(tbl->tbl_name);
-    n_records = BLOCK_SIZE / tbl->rec_len;
 
     // Need to add a offset to the fld_name searched for in the record
     cur_page_num = 0;
