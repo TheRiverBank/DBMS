@@ -28,7 +28,7 @@ int test_write() {
     write_page(filename, tbl->current_page);
     print_db(tbl);
 
-    int found = search_table_linear(tbl, "ID", 100);
+    int found = search_table_binary(tbl, "ID", 100);
     if (found == 1) {
         printf("FOUND\n");
     }

@@ -78,11 +78,19 @@ int write_page(const char *filename, page_t page) {
 int page_set_current_pos(int pos, page_t page) {
     /* Sets the current position in the page */
     if (pos < HEADER_SIZE) {
-        printf("invalid pos placement\n");
+        printf("invalid pos placement, pos placed at %d\n", pos);
         return -1;
     }
     page->current_pos = pos;
     return 1;
+}
+
+int page_current_pos(page_t page) {
+    return page->current_pos;
+}
+
+int page_last_written_byte(page_t page) {
+    return page->last_used_byte;
 }
 
 int page_put_int(int val, page_t page) {

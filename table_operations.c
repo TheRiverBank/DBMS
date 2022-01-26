@@ -127,13 +127,98 @@ int get_mid_record(int left, int right, int record_len) {
     return ((left_new + ((right_new - left_new) / 2)) * record_len) + HEADER_SIZE;
 }
 
+void get_start_pos_and_page(page_t cur_page, table_t tbl, int cur_page_idx, int val, int offset, int* start_pos, int* start_page) {
+  /* Finds the position and page of the first occurance of val */
+  int s_pos, s_page, end = 0;
+  /* Iterate backwards */
+  while (cur_page_idx >= 0) {
+    int pos = page_current_pos(cur_page);
+    while (pos >= HEADER_SIZE) {
+      /* If current pos is not the val, last occurance found */
+      if (page_get_int_at(cur_page, pos + offset) != val) {
+        /* If pos is at end of page go to begining of next page */
+        if (pos == page_last_written_byte(cur_page) - tbl->rec_len) {
+          s_pos = HEADER_SIZE;
+          s_page = cur_page_idx + 1;
+        }
+        /* If not, go one record forward and stay on page */
+        else {
+          s_pos = pos + tbl->rec_len;
+          s_page = cur_page_idx;
+        }
+        end = 1;
+        break;
+      }
+      else 
+        pos -= tbl->rec_len;
+    }
+
+    if (end) 
+      break;
+
+    /* Go backwards one page */
+    cur_page_idx -= 1;
+    tbl->current_page = get_page(tbl->tbl_name , cur_page_idx);
+    cur_page = tbl->current_page;
+    /* Set pos at end and continue iterating records backwards */
+    page_set_current_pos(page_last_written_byte(cur_page) - tbl->rec_len, cur_page);
+  }
+
+  /* If value was found at first pos in first page, cur_page_idx is -1. Set to start */
+  if (cur_page_idx < 0) {
+    s_page = 0;
+    s_pos = HEADER_SIZE;
+  }
+
+  /* Initialize found pos and page */
+  tbl->current_page = get_page(tbl->tbl_name, s_page);
+  page_set_current_pos(s_pos, cur_page);
+  /* Return found pos and page */
+  *start_pos = s_pos;
+  *start_page = s_page;
+}
+
+int get_records(int start_page, int n_blocks, page_t cur_page, table_t tbl, int val, int offset) {
+  /* Gets start pos and page from get_start_pos_and_page(), 
+   * then iterates forward until all records with val are found */
+  while (start_page <= n_blocks) {
+    int pos = page_current_pos(cur_page);
+    while(pos <= page_last_written_byte(cur_page) - tbl->rec_len) {
+      if (page_get_int_at(cur_page, pos + offset) == val) {
+        /* Append record to schema */
+        page_set_current_pos(pos, cur_page);
+        //get_page_record(cur_page, r, s);
+        //append_record(r, res_sch);
+        /* Go to next record */
+        pos += tbl->rec_len;
+      } 
+      /* Current pos does not have val so all records have been found, return. */
+      else return 0;
+    }
+    /* Go to next page. Reset current page first */
+    page_set_pos_beg(cur_page);
+    /* Unpin page possibly writing it */
+    write_page(tbl->tbl_name, tbl->current_page);
+  
+    /* Go to next page */
+    start_page += 1;
+    tbl->current_page = get_page(tbl->tbl_name , start_page);
+    cur_page = tbl->current_page;
+    
+    page_set_pos_beg(tbl->current_page);
+  }
+
+  return 0;
+}
+
+
 int search_table_binary(table_t tbl, char *fld_name, int value) {
      /* Binary search of table (only int)*/
     int i, j, n_blocks, n_records, cur_page_num;
     page_t cur_page;
     int left_page_idx, right_page_idx, cur_page_idx;
-    int left_val, right_val, mid_val;
-    int left_val_pos, right_val_pos;
+    int left_val, right_val, rec_val;
+    int left_val_pos, right_val_pos, mid_val_pos;
     int offset = 0;
 
     n_blocks = get_num_blocks(tbl->tbl_name);
@@ -145,24 +230,40 @@ int search_table_binary(table_t tbl, char *fld_name, int value) {
     cur_page = get_page(tbl->tbl_name, cur_page_idx);
     tbl->current_page = cur_page;
 
-    while (left_page_idx <= right_page_idx) {
+    while (right_page_idx >= left_page_idx) {
         left_val_pos = cur_page->current_pos;
         right_val_pos = cur_page->last_used_byte - tbl->rec_len;
         // Check min and max value in current page
         left_val = page_get_int_at(cur_page, left_val_pos + offset);
         right_val = page_get_int_at(cur_page, right_val_pos + offset);
         // Check if desired value is in this page
+        printf("Checking: %d %d\n", left_val, right_val);
         if (value >= left_val && value <= right_val) {
-            mid_val = get_mid_record(left_val_pos, right_val_pos, tbl->rec_len);
-            while(left_val_pos <= right_val_pos) {
-                if (value == mid_val) {
+            mid_val_pos = get_mid_record(left_val_pos, right_val_pos, tbl->rec_len);
+            printf("Found page with mid val: %d %d\n", right_val_pos, left_val_pos);
+            while(right_val_pos >= left_val_pos) {
+                rec_val = page_get_int_at(cur_page, mid_val_pos + offset);
+                printf("Testing: %d\n", rec_val);
+                if (value == rec_val) {
+                    printf("FOUND - binary\n");
+                    return 1;
                     // Found the value, have to find first occurance
-                    int start_pos, start_page;
-
-                    page_set_current_pos(mid_val, cur_page);
-
-
+                    // Must also add iterate forwards (exponentially?) to find all occurances
+                    // Add each occurance to a temporary result table which is printed to user
                 }
+
+               else {
+                /* Pager increments pos when calling page_get_int_at, dont want that */
+                page_set_current_pos(mid_val_pos, cur_page);
+                }
+
+                /* Get next middle in page */
+                if (rec_val < value) 
+                    left_val_pos = mid_val_pos + tbl->rec_len;
+                else 
+                    right_val_pos = mid_val_pos - tbl->rec_len;
+
+                mid_val_pos = get_mid_record(left_val_pos, right_val_pos, tbl->rec_len);
             }
         }
 
