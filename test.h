@@ -1,2 +1,1 @@
-int test_write();
-int test_read();
+int test_binary_search();

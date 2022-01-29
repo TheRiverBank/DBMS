@@ -13,7 +13,7 @@ typedef struct field field_t;
 struct field {
     char *name;
     field_t *next_field;
-    int offset;
+    int size;
     int type;
 };
 
@@ -44,14 +44,14 @@ table_t create_table(char *tbl_name, char *field_names[], int field_types[], int
     int i;
     fld_head = (field_t *)malloc(sizeof(field_t));
     fld_head->name = field_names[0];
-    fld_head->offset = field_sizes[0];
+    fld_head->size = field_sizes[0];
     fld_head->type = field_types[0];
 
     tmp_fld = fld_head;
     for (i = 1; i < n_fields; i++) {
         field_t *f = malloc(sizeof(field_t));
         f->name = field_names[i];
-        f->offset = field_sizes[i];
+        f->size = field_sizes[i];
         f->type = field_types[i];
         
         tmp_fld->next_field = f;
@@ -108,11 +108,21 @@ int offst_to_field(table_t tbl, char *fld_name) {
             return offset;
         }
 
-        offset += fld->offset;
+        offset += fld->size;
         fld = fld->next_field;
     }
 
     return -1;
+}
+
+void add_record(table_t tbl, table_t res_tbl) {
+    int i;
+    // Assume tbl->current_page is positioned at the begining of a record
+    // which is to be copied to res_tbl;
+    for (i = 0; i < tbl->n_fields; i++) {
+        // Plave each value from the original table in the result table.
+        page_put_int(page_get_int(tbl->current_page), res_tbl->current_page);
+    }
 }
 
 int get_mid_page(int left, int right) {
@@ -178,7 +188,7 @@ void get_start_pos_and_page(page_t cur_page, table_t tbl, int cur_page_idx, int 
   *start_page = s_page;
 }
 
-int get_records(int start_page, int n_blocks, page_t cur_page, table_t tbl, int val, int offset) {
+int get_records(int start_page, int n_blocks, page_t cur_page, table_t tbl, int val, int offset, table_t res_tbl) {
   /* Gets start pos and page from get_start_pos_and_page(), 
    * then iterates forward until all records with val are found */
   while (start_page <= n_blocks) {
@@ -187,8 +197,7 @@ int get_records(int start_page, int n_blocks, page_t cur_page, table_t tbl, int 
       if (page_get_int_at(cur_page, pos + offset) == val) {
         /* Append record to schema */
         page_set_current_pos(pos, cur_page);
-        //get_page_record(cur_page, r, s);
-        //append_record(r, res_sch);
+        add_record(tbl, res_tbl);
         /* Go to next record */
         pos += tbl->rec_len;
       } 
@@ -212,7 +221,7 @@ int get_records(int start_page, int n_blocks, page_t cur_page, table_t tbl, int 
 }
 
 
-int search_table_binary(table_t tbl, char *fld_name, int value) {
+int search_table_binary(table_t tbl, char *fld_name, int value, table_t res_tbl) {
      /* Binary search of table (only int)*/
     int i, j, n_blocks, n_records, cur_page_num;
     page_t cur_page;
@@ -246,6 +255,8 @@ int search_table_binary(table_t tbl, char *fld_name, int value) {
                 printf("Testing: %d\n", rec_val);
                 if (value == rec_val) {
                     printf("FOUND - binary\n");
+                    tbl->current_page->current_pos = mid_val_pos;
+                    add_record(tbl, res_tbl);
                     return 1;
                     // Found the value, have to find first occurance
                     // Must also add iterate forwards (exponentially?) to find all occurances
@@ -286,7 +297,7 @@ int search_table_binary(table_t tbl, char *fld_name, int value) {
     return 0;
 }
 
-int search_table_linear(table_t tbl, char *fld_name, int value) {
+int search_table_linear(table_t tbl, char *fld_name, int value, table_t res_tbl) {
     /* Linear search of table (only int)*/
     int i, j, n_blocks, cur_page_num;
     page_t pg;
@@ -317,6 +328,46 @@ int search_table_linear(table_t tbl, char *fld_name, int value) {
     return 0;
 }
 
+table_t copy_table(table_t tbl) {
+    int i;
+    char *field_names[tbl->n_fields];
+    int field_types[tbl->n_fields];
+    int field_sizes[tbl->n_fields];
+
+    field_t *fld = tbl->first_field;
+   
+    for (i = 0; i < tbl->n_fields; i++) {
+        field_names[i] = fld->name;
+        field_types[i] = fld->type;
+        field_sizes[i] = fld->size;
+
+        fld = fld->next_field;
+    }
+
+
+    table_t tbl_cpy = create_table("search_res", field_names, field_types, 
+                                                                 field_sizes, tbl->n_fields);
+                                                                 
+    return tbl_cpy;
+}
+
+void print_db(table_t tbl);
+int table_search(table_t tbl, char *fld_name, int value) {
+    // Copy table structure
+    table_t res_tbl = copy_table(tbl);
+   
+    // Create a page for the result
+    page_t tmp_page = get_page(res_tbl->tbl_name, 0);
+    res_tbl->current_page = tmp_page;
+    // Add tuples in which tuple(value) = value
+    
+    int found = search_table_binary(tbl, fld_name, value, res_tbl);
+    write_page(res_tbl->tbl_name, tmp_page);
+    print_db(res_tbl);
+    return found;
+    // Later.. include only those tuples specified in the select clause
+}
+
 void print_records_in_page(table_t tbl, page_t page) {
     int i, j;
     
@@ -345,7 +396,7 @@ void print_db(table_t tbl) {
     page_t page = get_page(tbl->tbl_name, 0);
     page_set_pos_beg(page);
     tbl->current_page = page;
- 
+  
     i = 0;
     while (i < n_blocks) {
         print_records_in_page(tbl, page);

@@ -4,11 +4,14 @@
 #include "pager.h"
 #include "test.h"
 
-
+/* TODO 
+ * Add search output to a temp table
+ * Add console input and fix a parser
+ */
 int main() {
     char *query = "select employee from employees";
     parse(query);
     open_file("db");
-    test_write();
+    test_binary_search();
     //test_read();
 }

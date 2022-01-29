@@ -3,7 +3,7 @@
 #include "test.h"
 #include "table_operations.h"
 
-int test_write() {
+int test_binary_search() {
     /* Write something to page 1 and close the file */
     char *filename = "db";
     int fd = open_file(filename);
@@ -26,10 +26,12 @@ int test_write() {
     } 
  
     write_page(filename, tbl->current_page);
-    print_db(tbl);
+    //print_db(tbl);
 
-    int found = search_table_binary(tbl, "ID", 100);
+    int found = table_search(tbl, "ID", 33);
     if (found == 1) {
         printf("FOUND\n");
     }
 }
+
+
