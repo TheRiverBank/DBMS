@@ -20,15 +20,17 @@ int test_binary_search() {
     
     int i;
     int n_records = 200;
+    int search_val = 33;
     for (i = 0; i < n_records; i++) {
         int vals[2] = {i, 432};
+        if (i == search_val) 
+            insert_record(vals, tbl);
         insert_record(vals, tbl);
     } 
  
     write_page(filename, tbl->current_page);
-    //print_db(tbl);
 
-    int found = table_search(tbl, "ID", 33);
+    int found = table_search(tbl, "ID", search_val);
     if (found == 1) {
         printf("FOUND\n");
     }

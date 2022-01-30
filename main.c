@@ -5,7 +5,6 @@
 #include "test.h"
 
 /* TODO 
- * Add search output to a temp table
  * Add console input and fix a parser
  */
 int main() {

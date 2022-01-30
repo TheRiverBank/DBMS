@@ -254,13 +254,19 @@ int search_table_binary(table_t tbl, char *fld_name, int value, table_t res_tbl)
                 rec_val = page_get_int_at(cur_page, mid_val_pos + offset);
                 printf("Testing: %d\n", rec_val);
                 if (value == rec_val) {
+                    int start_pos, start_page;
                     printf("FOUND - binary\n");
                     tbl->current_page->current_pos = mid_val_pos;
-                    add_record(tbl, res_tbl);
-                    return 1;
-                    // Found the value, have to find first occurance
-                    // Must also add iterate forwards (exponentially?) to find all occurances
-                    // Add each occurance to a temporary result table which is printed to user
+                    get_start_pos_and_page(cur_page, tbl, cur_page_idx, value, offset, &start_pos, &start_page);
+                    
+                    tbl->current_page = get_page(tbl->tbl_name, start_page);
+                    cur_page = tbl->current_page;
+                    page_set_current_pos(start_pos, cur_page);
+
+                    get_records(start_page, n_blocks, cur_page, tbl, value, offset, res_tbl);
+
+                    
+                    return 0;
                 }
 
                else {
