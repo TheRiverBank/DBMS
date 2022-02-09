@@ -30,3 +30,4 @@ int page_put_int(int val, page_t page);
 int page_get_int(page_t page);
 int page_get_int_at(page_t page, int pos);
 int page_set_pos_beg(page_t page);
+int get_num_blocks(char *f_name);

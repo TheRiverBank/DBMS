@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "pager.h"
 
 char *filename = "db";
@@ -134,4 +136,16 @@ int page_get_int_at(page_t page, int pos) {
 int page_set_pos_beg(page_t page) {
     /* Sets the current position in the page back to 0 */
     page->current_pos = HEADER_SIZE;
+}
+
+int get_num_blocks(char *f_name) {
+     int n_blocks;
+    // Get number of bytes in file
+    struct stat buf;
+    stat(f_name, &buf);
+    off_t size = buf.st_size;
+    // Get number of written blocks
+    n_blocks = size / BLOCK_SIZE;
+
+    return n_blocks;
 }

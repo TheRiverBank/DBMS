@@ -7,3 +7,5 @@ struct file_entry {
     int record_addr;
 };
 typedef struct file_entry file_entry_t;
+
+#define INDEX_HEADER_SIZE = 16 

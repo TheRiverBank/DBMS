@@ -87,18 +87,6 @@ int insert_record(int values[], table_t tbl) {
     }
 }
 
-int get_num_blocks(char *f_name) {
-     int n_blocks;
-    // Get number of bytes in file
-    struct stat buf;
-    stat(f_name, &buf);
-    off_t size = buf.st_size;
-    // Get number of written blocks
-    n_blocks = size / BLOCK_SIZE;
-
-    return n_blocks;
-}
-
 int offst_to_field(table_t tbl, char *fld_name) {
     int i, offset = 0;
     field_t *fld = tbl->first_field;
