@@ -29,8 +29,11 @@ table_t create_index_file(char *filename, char *search_key_name, int key_data_ty
      * Returns the created table-
      */
     int fd = open_file(filename);
-    table_t idx_table = create_table(filename, &search_key_name, (int *)1, (int*)INT_SIZE, 1);
-    
+    char *sk_name[1] = {search_key_name};
+    int f_types[1] = {0};
+    int f_sizes[1] = {4};
+    table_t idx_table = create_table(filename, sk_name, f_types, f_sizes, 1);
+  
     page_t page = get_page(filename, 0);
 
     field_t *key_fld = (field_t *)malloc(sizeof(field_t));
@@ -66,31 +69,33 @@ int populate_index_file(table_t idx_tbl, table_t data_tbl) {
     
     cur_blk_idx_data = 0;
     cur_blk_idx_index = 0;
-
+    printf("Here\n");
     cur_data_pg = get_page(data_tbl->tbl_name, cur_blk_idx_data);
     cur_idx_pg = get_page(idx_tbl->tbl_name, cur_blk_idx_index);
-
+    printf("Here\n");
     page_set_pos_beg(cur_data_pg);
     page_set_pos_beg(cur_idx_pg);
-
+    printf("Here\n");
     n_blocks = get_num_blocks(data_tbl->tbl_name);
     // Get offset to the key value in the data table.
+    printf("Here\n");
     offst = offst_to_field(data_tbl, idx_tbl->first_field->name);
-
+    printf("Here\n");
     for (i = 0; i < n_blocks; i++) {
         while(cur_data_pg->current_pos <= cur_data_pg->last_used_byte) {
             // Get the value at search key pos
             int val = page_get_int_at(cur_data_pg, offst + cur_data_pg->current_pos);
             // Add the search key value to the index table
-            page_put_int(val, idx_tbl);
+            page_put_int(val, cur_idx_pg);
             // Add the block number where this value is found
-            page_put_int(i, idx_tbl);
+            page_put_int(i, cur_idx_pg);
 
             if(cur_idx_pg->current_pos + INT_SIZE > BLOCK_SIZE) {
-                write_page(idx_tbl->tbl_name, cur_blk_idx_index);
+                write_page(idx_tbl->tbl_name, cur_idx_pg);
                 cur_blk_idx_index += 1;
                 cur_idx_pg = get_page(idx_tbl->tbl_name, cur_blk_idx_index);
             }
+           cur_data_pg->current_pos += data_tbl->rec_len;
         }
         cur_blk_idx_data += 1;
         cur_data_pg = get_page(data_tbl->tbl_name, cur_blk_idx_data);

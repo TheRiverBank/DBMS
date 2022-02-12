@@ -5,33 +5,10 @@
 #include <sys/stat.h>
 #include "pager.h"
 #include "parser.h"
+#include "table_operations.h"
 
 #define INT_TYPE 0
 #define STR_TYPE 1
-
-typedef struct field field_t;
-struct field {
-    char *name;
-    field_t *next_field;
-    int size;
-    int type;
-};
-
-struct table {
-    char *tbl_name;
-    field_t *first_field;
-    page_t current_page;
-    int n_fields;
-    int rec_len;
-};
-typedef struct table *table_t; 
-
-struct record {
-    char *field_name;
-    int value;
-};
-typedef struct record record_t;
-
 
 table_t create_table(char *tbl_name, char *field_names[], int field_types[], int field_sizes[], int n_fields) {
     /* Creates a table by creating a set of field descriptors for 

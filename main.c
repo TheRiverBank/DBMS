@@ -15,6 +15,6 @@ int main() {
     char *query = "select employee from employees";
     parse(query);
     open_file("db");
-    test_binary_search();
-    //test_read();
+    //test_binary_search();
+    test_index_file();
 }

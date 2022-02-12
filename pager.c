@@ -7,8 +7,6 @@
 #include <sys/stat.h>
 #include "pager.h"
 
-char *filename = "db";
-
 int open_file(const char *filename) {
     /* Opens file and retuns file handle.
      * If the file is not found, it is created.

@@ -2,8 +2,9 @@ typedef struct field field_t;
 struct field {
     char *name;
     field_t *next_field;
-    int offset;
+    int size;
     int type;
+    int offset;
 };
 
 struct table {
@@ -11,6 +12,7 @@ struct table {
     field_t *first_field;
     page_t current_page;
     int n_fields;
+    int rec_len;
 };
 typedef struct table *table_t;
 
@@ -19,7 +21,6 @@ struct record {
     int value;
 };
 typedef struct record record_t;
-
 
 table_t create_table(char *tbl_name, char *field_names[], int field_types[], int field_sizes[], int n_fields);
 int insert_record(int values[], table_t tbl);
