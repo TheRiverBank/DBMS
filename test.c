@@ -20,8 +20,8 @@ int test_binary_search() {
     
     
     int i;
-    int n_records = 200;
-    int search_val = 33;
+    int n_records = 1000;
+    int search_val = 700;
     for (i = 0; i < n_records; i++) {
         int vals[2] = {i, 432};
         if (i == search_val) 
@@ -41,7 +41,8 @@ int test_binary_search() {
 int test_index_file() {
     /* Write something to page 1 and close the file */
     char *filename = "index_test_table";
-    int fd = open_file(filename);
+    delete_file(filename);
+    int fd = open_file(filename);   
  
     page_t p = get_page(filename, 0);
     page_set_pos_beg(p);
@@ -53,15 +54,28 @@ int test_index_file() {
     tbl->current_page = p;
     
     int i;
-    int n_records = 20;
+    int n_records = 100;
 
     for (i = 0; i < n_records; i++) {
-        int vals[3] = {i, 432, i * 2};
+        int vals[3] = {i, 432, i};
         insert_record(vals, tbl);
     } 
+
     printf("Records inserted\n");
     write_page(filename, tbl->current_page);
+
+
     printf("Creating index table\n");
+
+    delete_file("index_table");
+
     table_t idx_table = create_index_file("index_table", "ID", 0);
+
+    //write_page("index_table", idx_table->current_page);
+
+    printf("Populating index table\n");
+
+    populate_index_file(idx_table, tbl);
+    print_db(idx_table);
 }
 

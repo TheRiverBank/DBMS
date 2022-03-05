@@ -25,6 +25,10 @@ int close_file(int fd) {
     close(fd);
 }
 
+int delete_file(char *filename) {
+    int del = remove(filename);
+    return del;
+}
 
 page_t get_page(const char *filename, int blk_num) {
     /* Reads blk_num from disk and creates a page with the block data */
@@ -98,7 +102,6 @@ int page_put_int(int val, page_t page) {
         memcpy(page->data + page->current_pos, (char *)&val, sizeof(int));
     }
     else {
-        printf("Page %d is full\n", page->page_nr);
         return 0;
     }
     

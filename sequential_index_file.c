@@ -69,18 +69,19 @@ int populate_index_file(table_t idx_tbl, table_t data_tbl) {
     
     cur_blk_idx_data = 0;
     cur_blk_idx_index = 0;
-    printf("Here\n");
+ 
     cur_data_pg = get_page(data_tbl->tbl_name, cur_blk_idx_data);
     cur_idx_pg = get_page(idx_tbl->tbl_name, cur_blk_idx_index);
-    printf("Here\n");
+    data_tbl->current_page = cur_data_pg;
+    idx_tbl->current_page = cur_idx_pg;
+    printf("## %d %d\n", cur_blk_idx_data, cur_data_pg->last_used_byte);
     page_set_pos_beg(cur_data_pg);
     page_set_pos_beg(cur_idx_pg);
-    printf("Here\n");
+
     n_blocks = get_num_blocks(data_tbl->tbl_name);
     // Get offset to the key value in the data table.
-    printf("Here\n");
     offst = offst_to_field(data_tbl, idx_tbl->first_field->name);
-    printf("Here\n");
+ 
     for (i = 0; i < n_blocks; i++) {
         while(cur_data_pg->current_pos <= cur_data_pg->last_used_byte) {
             // Get the value at search key pos
@@ -89,19 +90,27 @@ int populate_index_file(table_t idx_tbl, table_t data_tbl) {
             page_put_int(val, cur_idx_pg);
             // Add the block number where this value is found
             page_put_int(i, cur_idx_pg);
-
-            if(cur_idx_pg->current_pos + INT_SIZE > BLOCK_SIZE) {
+            printf("ee %d\n", cur_idx_pg->current_pos + INT_SIZE);
+            if(cur_idx_pg->current_pos + INT_SIZE >= BLOCK_SIZE) {
+                //printf("Newpage\n");
                 write_page(idx_tbl->tbl_name, cur_idx_pg);
                 cur_blk_idx_index += 1;
                 cur_idx_pg = get_page(idx_tbl->tbl_name, cur_blk_idx_index);
+                page_set_pos_beg(cur_idx_pg);
+                idx_tbl->current_page = cur_idx_pg;
+                //printf("curr idx: %d\n", cur_blk_idx_index);
             }
            cur_data_pg->current_pos += data_tbl->rec_len;
         }
+        printf("Newpage data\n");
+        write_page(data_tbl->tbl_name, data_tbl->current_page);
         cur_blk_idx_data += 1;
         cur_data_pg = get_page(data_tbl->tbl_name, cur_blk_idx_data);
+        page_set_pos_beg(cur_data_pg);
+        data_tbl->current_page = cur_data_pg;
         // ASSUME THAT DATA TABLE WITH SWITCH BLOCK BEFORE INDEX TABLE  
     }
-
+    write_page(idx_tbl->tbl_name, cur_idx_pg);
 }
 
 

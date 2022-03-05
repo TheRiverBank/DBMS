@@ -19,6 +19,7 @@ enum {FALSE, TRUE};
 
 int open_file(const char *filename);
 int close_file(int fd);
+int delete_file(char *filename);
 page_t get_page(const char *filename, int blk_num);
 int write_page(const char *filename, page_t page);
 

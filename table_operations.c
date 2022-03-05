@@ -44,7 +44,7 @@ table_t create_table(char *tbl_name, char *field_names[], int field_types[], int
 
 int insert_record(int values[], table_t tbl) {
     /* Inserts the given values into the table */
-    char *filename = "db";
+    char *filename = tbl->tbl_name;
     int i;
     field_t *fld = tbl->first_field;
     page_t pg = tbl->current_page;
